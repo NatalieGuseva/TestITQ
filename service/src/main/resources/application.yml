@@ -1,0 +1,63 @@
+spring:
+  application:
+    name: document-service
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/documents_db
+    username: documents_user
+    password: documents_pass
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+      connection-timeout: 30000
+
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate          # validate схему создаёт Liquibase, Hibernate только проверяет
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+        default_batch_fetch_size: 50  # оптимизация N+1 при lazy loading
+
+  liquibase:
+    change-log: classpath:db/changelog/db.changelog-master.xml
+    enabled: true
+
+server:
+  port: 8080
+
+# Настройки воркеров и пакетной обработки
+app:
+  worker:
+    batch-size: 50                  # размер пачки для воркеров
+    initiator: system-worker        # инициатор фоновых операций
+    submit:
+      delay-ms: 10000               # задержка между запусками SubmitWorker (мс)
+    approve:
+      delay-ms: 15000               # задержка между запусками ApproveWorker (мс)
+
+# Swagger UI
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: method
+
+# Логирование
+logging:
+  level:
+    org.example.service: INFO
+    org.hibernate.SQL: WARN
+    org.springframework.scheduling: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics

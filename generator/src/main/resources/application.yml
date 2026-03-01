@@ -1,0 +1,13 @@
+spring:
+  main:
+    web-application-type: none  # утилита, не веб-сервер
+
+generator:
+  service-url: http://localhost:8080
+  count: 100        # количество документов по умолчанию
+  batch-size: 10    # шаг логирования прогресса
+  timeout-seconds: 30
+
+logging:
+  level:
+    org.example.document.generator: INFO

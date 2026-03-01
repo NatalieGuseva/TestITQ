@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="001-1" author="system">
+        <comment>Sequence для генерации id документов</comment>
+        <sql>CREATE SEQUENCE IF NOT EXISTS documents_seq START WITH 1 INCREMENT BY 1</sql>
+        <rollback>DROP SEQUENCE IF EXISTS documents_seq</rollback>
+    </changeSet>
+
+    <changeSet id="001-2" author="system">
+        <comment>Sequence для генерации уникальных номеров документов (DOC-YEAR-XXXXX)</comment>
+        <sql>CREATE SEQUENCE IF NOT EXISTS document_number_seq START WITH 1 INCREMENT BY 1</sql>
+        <rollback>DROP SEQUENCE IF EXISTS document_number_seq</rollback>
+    </changeSet>
+
+    <changeSet id="001-3" author="system">
+        <comment>Sequence для истории документов</comment>
+        <sql>CREATE SEQUENCE IF NOT EXISTS document_history_seq START WITH 1 INCREMENT BY 1</sql>
+        <rollback>DROP SEQUENCE IF EXISTS document_history_seq</rollback>
+    </changeSet>
+
+    <changeSet id="001-4" author="system">
+        <comment>Sequence для реестра утверждений</comment>
+        <sql>CREATE SEQUENCE IF NOT EXISTS approval_registry_seq START WITH 1 INCREMENT BY 1</sql>
+        <rollback>DROP SEQUENCE IF EXISTS approval_registry_seq</rollback>
+    </changeSet>
+
+</databaseChangeLog>

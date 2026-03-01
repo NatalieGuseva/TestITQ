@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="002-1" author="system">
+        <comment>Создание таблицы documents</comment>
+
+        <createTable tableName="documents">
+            <column name="id" type="BIGINT" defaultValueSequenceNext="documents_seq">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="number" type="VARCHAR(50)">
+                <constraints nullable="false" unique="true" uniqueConstraintName="uq_documents_number"/>
+            </column>
+            <column name="title" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="author" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="status" type="VARCHAR(20)" defaultValue="DRAFT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="version" type="BIGINT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <rollback>
+            <dropTable tableName="documents"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="002-2" author="system">
+        <comment>Индексы для таблицы documents — ускоряют поиск и фильтрацию</comment>
+
+        <!-- Для поиска по статусу (воркеры + фильтрация) -->
+        <createIndex tableName="documents" indexName="idx_documents_status">
+            <column name="status"/>
+        </createIndex>
+
+        <!-- Для поиска по автору -->
+        <createIndex tableName="documents" indexName="idx_documents_author">
+            <column name="author"/>
+        </createIndex>
+
+        <!-- Для фильтрации по периоду дат -->
+        <createIndex tableName="documents" indexName="idx_documents_created_at">
+            <column name="created_at"/>
+        </createIndex>
+
+        <!-- Составной индекс для типичного поискового запроса: status + created_at -->
+        <createIndex tableName="documents" indexName="idx_documents_status_created_at">
+            <column name="status"/>
+            <column name="created_at"/>
+        </createIndex>
+
+        <rollback>
+            <dropIndex tableName="documents" indexName="idx_documents_status"/>
+            <dropIndex tableName="documents" indexName="idx_documents_author"/>
+            <dropIndex tableName="documents" indexName="idx_documents_created_at"/>
+            <dropIndex tableName="documents" indexName="idx_documents_status_created_at"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="002-3" author="system">
+        <comment>Проверочное ограничение на допустимые значения статуса</comment>
+        <sql>
+            ALTER TABLE documents
+                ADD CONSTRAINT chk_documents_status
+                    CHECK (status IN ('DRAFT', 'SUBMITTED', 'APPROVED'))
+        </sql>
+        <rollback>
+            ALTER TABLE documents DROP CONSTRAINT chk_documents_status
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>
