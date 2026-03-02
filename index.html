@@ -1,0 +1,1888 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DocFlow — ITQ Document Service</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0b0e;
+    --surface: #111318;
+    --surface2: #181c24;
+    --border: #1e2330;
+    --border2: #252b3a;
+    --text: #e8eaf0;
+    --text2: #8b92a8;
+    --text3: #4a5068;
+    --accent: #4f7cff;
+    --accent2: #3d63d4;
+    --green: #22c55e;
+    --green-dim: #16a34a22;
+    --yellow: #f59e0b;
+    --yellow-dim: #f59e0b22;
+    --red: #ef4444;
+    --red-dim: #ef444422;
+    --blue-dim: #4f7cff18;
+    --mono: 'Space Mono', monospace;
+    --sans: 'DM Sans', sans-serif;
+    --radius: 10px;
+    --radius-sm: 6px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ─── BACKGROUND GRID ─── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(var(--border) 1px, transparent 1px),
+      linear-gradient(90deg, var(--border) 1px, transparent 1px);
+    background-size: 40px 40px;
+    opacity: 0.3;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ─── LAYOUT ─── */
+  .app { display: flex; height: 100vh; position: relative; z-index: 1; }
+
+  /* ─── SIDEBAR ─── */
+  .sidebar {
+    width: 240px;
+    flex-shrink: 0;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .logo {
+    padding: 20px 20px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .logo-mark {
+    font-family: var(--mono);
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: -0.5px;
+  }
+
+  .logo-sub {
+    font-size: 11px;
+    color: var(--text3);
+    margin-top: 2px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+
+  .nav {
+    flex: 1;
+    padding: 12px 8px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .nav-section-title {
+    font-size: 10px;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding: 8px 12px 4px;
+    font-family: var(--mono);
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 12px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-size: 13.5px;
+    font-weight: 500;
+    color: var(--text2);
+    transition: all 0.15s;
+    border: 1px solid transparent;
+    white-space: nowrap;
+  }
+
+  .nav-item:hover { background: var(--surface2); color: var(--text); }
+
+  .nav-item.active {
+    background: var(--blue-dim);
+    color: var(--accent);
+    border-color: #4f7cff30;
+  }
+
+  .nav-icon { font-size: 15px; flex-shrink: 0; }
+
+  .sidebar-footer {
+    padding: 16px;
+    border-top: 1px solid var(--border);
+  }
+
+  .api-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--text2);
+  }
+
+  .status-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--text3);
+    flex-shrink: 0;
+    transition: background 0.3s;
+  }
+  .status-dot.online { background: var(--green); box-shadow: 0 0 6px var(--green); }
+  .status-dot.offline { background: var(--red); }
+
+  /* ─── MAIN ─── */
+  .main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .topbar {
+    height: 56px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 24px;
+    gap: 16px;
+    background: var(--surface);
+    flex-shrink: 0;
+  }
+
+  .page-title {
+    font-family: var(--mono);
+    font-size: 14px;
+    color: var(--text);
+  }
+
+  .topbar-spacer { flex: 1; }
+
+  .search-box {
+    display: flex;
+    align-items: center;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius-sm);
+    padding: 6px 12px;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--text2);
+  }
+
+  .search-box input {
+    background: none;
+    border: none;
+    outline: none;
+    color: var(--text);
+    font-size: 13px;
+    font-family: var(--sans);
+    width: 200px;
+  }
+
+  .search-box input::placeholder { color: var(--text3); }
+
+  .content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px;
+  }
+
+  /* ─── PAGES ─── */
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* ─── CARDS ─── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+
+  .card-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .card-title {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--text);
+  }
+
+  .card-body { padding: 20px; }
+
+  /* ─── STATS GRID ─── */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+  }
+
+  .stat-card.draft::before { background: var(--yellow); }
+  .stat-card.submitted::before { background: var(--accent); }
+  .stat-card.approved::before { background: var(--green); }
+  .stat-card.total::before { background: var(--text3); }
+
+  .stat-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text3);
+    font-family: var(--mono);
+    margin-bottom: 8px;
+  }
+
+  .stat-value {
+    font-family: var(--mono);
+    font-size: 32px;
+    font-weight: 700;
+    line-height: 1;
+  }
+
+  .stat-card.draft .stat-value { color: var(--yellow); }
+  .stat-card.submitted .stat-value { color: var(--accent); }
+  .stat-card.approved .stat-value { color: var(--green); }
+  .stat-card.total .stat-value { color: var(--text2); }
+
+  /* ─── TABLE ─── */
+  .table-wrap {
+    overflow-x: auto;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13.5px;
+  }
+
+  thead tr {
+    border-bottom: 1px solid var(--border2);
+  }
+
+  th {
+    padding: 10px 16px;
+    text-align: left;
+    font-size: 11px;
+    font-family: var(--mono);
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    font-weight: 400;
+    white-space: nowrap;
+  }
+
+  td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text2);
+    vertical-align: middle;
+  }
+
+  tbody tr {
+    transition: background 0.1s;
+    cursor: pointer;
+  }
+
+  tbody tr:hover td { background: var(--surface2); }
+  tbody tr:last-child td { border-bottom: none; }
+
+  .doc-number {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--accent);
+  }
+
+  .doc-title { color: var(--text); font-weight: 500; }
+
+  /* ─── BADGES ─── */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 9px;
+    border-radius: 100px;
+    font-size: 11px;
+    font-family: var(--mono);
+    font-weight: 700;
+    letter-spacing: 0.3px;
+  }
+
+  .badge::before {
+    content: '';
+    width: 5px; height: 5px;
+    border-radius: 50%;
+  }
+
+  .badge-draft { background: var(--yellow-dim); color: var(--yellow); }
+  .badge-draft::before { background: var(--yellow); }
+  .badge-submitted { background: var(--blue-dim); color: var(--accent); }
+  .badge-submitted::before { background: var(--accent); }
+  .badge-approved { background: var(--green-dim); color: var(--green); }
+  .badge-approved::before { background: var(--green); }
+
+  /* ─── BUTTONS ─── */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 8px 16px;
+    border-radius: var(--radius-sm);
+    border: none;
+    cursor: pointer;
+    font-size: 13px;
+    font-family: var(--sans);
+    font-weight: 500;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: #fff;
+  }
+  .btn-primary:hover { background: var(--accent2); }
+
+  .btn-ghost {
+    background: transparent;
+    color: var(--text2);
+    border: 1px solid var(--border2);
+  }
+  .btn-ghost:hover { background: var(--surface2); color: var(--text); border-color: var(--border2); }
+
+  .btn-danger {
+    background: var(--red-dim);
+    color: var(--red);
+    border: 1px solid #ef444430;
+  }
+  .btn-danger:hover { background: #ef444430; }
+
+  .btn-success {
+    background: var(--green-dim);
+    color: var(--green);
+    border: 1px solid #22c55e30;
+  }
+  .btn-success:hover { background: #22c55e30; }
+
+  .btn-sm { padding: 5px 10px; font-size: 12px; }
+
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* ─── FORMS ─── */
+  .form-grid { display: grid; gap: 16px; }
+  .form-grid-2 { grid-template-columns: 1fr 1fr; }
+  .form-grid-3 { grid-template-columns: 1fr 1fr 1fr; }
+
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+
+  label {
+    font-size: 11px;
+    font-family: var(--mono);
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+  }
+
+  input, textarea, select {
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius-sm);
+    padding: 9px 12px;
+    color: var(--text);
+    font-size: 13.5px;
+    font-family: var(--sans);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  input:focus, textarea:focus, select:focus {
+    border-color: var(--accent);
+  }
+
+  input::placeholder, textarea::placeholder { color: var(--text3); }
+
+  select option { background: var(--surface2); }
+
+  textarea { resize: vertical; min-height: 80px; }
+
+  /* ─── FILTERS BAR ─── */
+  .filters {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .filters select, .filters input {
+    padding: 6px 10px;
+    font-size: 13px;
+    height: 34px;
+  }
+
+  /* ─── PAGINATION ─── */
+  .pagination {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    justify-content: flex-end;
+    padding: 16px 20px;
+    border-top: 1px solid var(--border);
+  }
+
+  .pagination button {
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    color: var(--text2);
+    padding: 5px 10px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-size: 12px;
+    font-family: var(--mono);
+    transition: all 0.15s;
+  }
+  .pagination button:hover { border-color: var(--accent); color: var(--accent); }
+  .pagination button.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .pagination button:disabled { opacity: 0.3; cursor: not-allowed; }
+
+  .page-info {
+    font-size: 12px;
+    color: var(--text3);
+    font-family: var(--mono);
+    padding: 0 4px;
+  }
+
+  /* ─── MODAL ─── */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(4px);
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s;
+  }
+
+  .modal-overlay.open {
+    opacity: 1;
+    pointer-events: all;
+  }
+
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 14px;
+    width: 560px;
+    max-width: calc(100vw - 40px);
+    max-height: calc(100vh - 80px);
+    overflow-y: auto;
+    transform: translateY(16px);
+    transition: transform 0.2s;
+  }
+
+  .modal-overlay.open .modal { transform: translateY(0); }
+
+  .modal-lg { width: 800px; }
+
+  .modal-header {
+    padding: 20px 24px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .modal-title {
+    font-family: var(--mono);
+    font-size: 14px;
+    color: var(--text);
+  }
+
+  .modal-close {
+    background: none;
+    border: none;
+    color: var(--text3);
+    cursor: pointer;
+    font-size: 18px;
+    padding: 4px;
+    line-height: 1;
+    transition: color 0.15s;
+  }
+  .modal-close:hover { color: var(--text); }
+
+  .modal-body { padding: 24px; }
+
+  .modal-footer {
+    padding: 16px 24px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+  }
+
+  /* ─── DETAIL VIEW ─── */
+  .detail-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .detail-field:last-child { border-bottom: none; }
+
+  .detail-label {
+    font-size: 10px;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-family: var(--mono);
+  }
+
+  .detail-value {
+    font-size: 14px;
+    color: var(--text);
+  }
+
+  .detail-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0 24px;
+  }
+
+  /* ─── HISTORY TIMELINE ─── */
+  .timeline { display: flex; flex-direction: column; gap: 0; }
+
+  .timeline-item {
+    display: flex;
+    gap: 14px;
+    padding: 12px 0;
+    position: relative;
+  }
+
+  .timeline-item::before {
+    content: '';
+    position: absolute;
+    left: 15px;
+    top: 36px;
+    bottom: -12px;
+    width: 1px;
+    background: var(--border2);
+  }
+
+  .timeline-item:last-child::before { display: none; }
+
+  .timeline-dot {
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    margin-top: 2px;
+  }
+
+  .timeline-dot-submit { background: var(--blue-dim); color: var(--accent); }
+  .timeline-dot-approve { background: var(--green-dim); color: var(--green); }
+
+  .timeline-content { flex: 1; }
+
+  .timeline-action {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 3px;
+  }
+
+  .timeline-meta {
+    font-size: 12px;
+    color: var(--text3);
+    font-family: var(--mono);
+  }
+
+  .timeline-comment {
+    margin-top: 6px;
+    font-size: 12.5px;
+    color: var(--text2);
+    background: var(--surface2);
+    padding: 6px 10px;
+    border-radius: var(--radius-sm);
+    border-left: 2px solid var(--border2);
+  }
+
+  /* ─── BATCH CONTROLS ─── */
+  .batch-section { margin-bottom: 24px; }
+
+  .batch-section-title {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 12px;
+  }
+
+  .id-input-row {
+    display: flex;
+    gap: 10px;
+  }
+
+  .id-input-row input { flex: 1; }
+
+  .result-list { display: flex; flex-direction: column; gap: 6px; margin-top: 12px; }
+
+  .result-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+  }
+
+  .result-item.success { background: var(--green-dim); border: 1px solid #22c55e30; }
+  .result-item.error { background: var(--red-dim); border: 1px solid #ef444430; }
+  .result-item.conflict { background: var(--yellow-dim); border: 1px solid #f59e0b30; }
+
+  .result-item-id { font-family: var(--mono); color: var(--text2); }
+  .result-item-status { font-size: 12px; font-family: var(--mono); }
+  .result-item.success .result-item-status { color: var(--green); }
+  .result-item.error .result-item-status { color: var(--red); }
+  .result-item.conflict .result-item-status { color: var(--yellow); }
+
+  /* ─── CONCURRENCY ─── */
+  .concurrency-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+
+  .concurrency-result {
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius);
+    padding: 16px;
+    text-align: center;
+  }
+
+  .concurrency-result-value {
+    font-family: var(--mono);
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+
+  .concurrency-result-label {
+    font-size: 11px;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-family: var(--mono);
+  }
+
+  /* ─── TOAST ─── */
+  .toast-container {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: flex-end;
+  }
+
+  .toast {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius);
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13.5px;
+    max-width: 360px;
+    transform: translateX(100px);
+    opacity: 0;
+    transition: all 0.25s;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  }
+
+  .toast.show { transform: translateX(0); opacity: 1; }
+  .toast-success { border-left: 3px solid var(--green); }
+  .toast-error { border-left: 3px solid var(--red); }
+  .toast-info { border-left: 3px solid var(--accent); }
+
+  /* ─── LOADING ─── */
+  .spinner {
+    width: 16px; height: 16px;
+    border: 2px solid var(--border2);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    flex-shrink: 0;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .loading-overlay {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 60px;
+    gap: 12px;
+    color: var(--text3);
+    font-size: 13px;
+  }
+
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px;
+    gap: 8px;
+  }
+
+  .empty-icon { font-size: 32px; opacity: 0.3; }
+  .empty-text { color: var(--text3); font-size: 13.5px; }
+
+  /* ─── CHECKBOX ─── */
+  .checkbox-col { width: 40px; }
+  
+  input[type="checkbox"] {
+    width: 16px; height: 16px;
+    accent-color: var(--accent);
+    cursor: pointer;
+    padding: 0;
+  }
+
+  /* ─── SCROLLBAR ─── */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text3); }
+
+  /* ─── SELECTION BAR ─── */
+  .selection-bar {
+    display: none;
+    align-items: center;
+    gap: 12px;
+    background: var(--blue-dim);
+    border: 1px solid #4f7cff30;
+    border-radius: var(--radius-sm);
+    padding: 10px 16px;
+    margin-bottom: 12px;
+  }
+
+  .selection-bar.visible { display: flex; }
+
+  .selection-count {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--accent);
+    flex: 1;
+  }
+
+  /* ─── ANIMATIONS ─── */
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .page.active { animation: fadeIn 0.2s ease; }
+
+  .action-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .divider {
+    width: 1px;
+    height: 20px;
+    background: var(--border2);
+  }
+
+  /* Concurrency progress */
+  .progress-bar-wrap {
+    background: var(--surface2);
+    border-radius: 100px;
+    height: 6px;
+    overflow: hidden;
+    margin-top: 8px;
+  }
+  .progress-bar {
+    height: 100%;
+    border-radius: 100px;
+    transition: width 0.4s ease;
+  }
+  .progress-bar.green { background: var(--green); }
+  .progress-bar.red { background: var(--red); }
+  .progress-bar.blue { background: var(--accent); }
+
+  .tag {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 100px;
+    font-size: 11px;
+    font-family: var(--mono);
+    background: var(--surface2);
+    color: var(--text3);
+    border: 1px solid var(--border2);
+  }
+
+  @media (max-width: 900px) {
+    .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    .form-grid-2, .form-grid-3 { grid-template-columns: 1fr; }
+    .concurrency-grid { grid-template-columns: 1fr 1fr; }
+    .detail-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="logo">
+      <div class="logo-mark">DocFlow</div>
+      <div class="logo-sub">ITQ Group · v1.0</div>
+    </div>
+    <nav class="nav">
+      <div class="nav-section-title">Обзор</div>
+      <div class="nav-item active" onclick="navigate('dashboard')">
+        <span class="nav-icon">◈</span> Дашборд
+      </div>
+
+      <div class="nav-section-title" style="margin-top:8px">Документы</div>
+      <div class="nav-item" onclick="navigate('documents')">
+        <span class="nav-icon">▤</span> Все документы
+      </div>
+      <div class="nav-item" onclick="navigate('create')">
+        <span class="nav-icon">＋</span> Создать документ
+      </div>
+      <div class="nav-item" onclick="navigate('search')">
+        <span class="nav-icon">⌕</span> Поиск
+      </div>
+
+      <div class="nav-section-title" style="margin-top:8px">Обработка</div>
+      <div class="nav-item" onclick="navigate('batch')">
+        <span class="nav-icon">⚡</span> Batch операции
+      </div>
+      <div class="nav-item" onclick="navigate('concurrency')">
+        <span class="nav-icon">⊛</span> Тест конкурентности
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="api-status">
+        <div class="status-dot" id="status-dot"></div>
+        <span id="status-text">Проверка API...</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+    <div class="topbar">
+      <span class="page-title" id="topbar-title">// dashboard</span>
+      <div class="topbar-spacer"></div>
+      <div class="search-box">
+        <span style="color:var(--text3)">⌕</span>
+        <input type="text" id="global-search" placeholder="Быстрый поиск по номеру..." onkeydown="if(event.key==='Enter')quickSearch(this.value)">
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- DASHBOARD PAGE -->
+      <div class="page active" id="page-dashboard">
+        <div class="stats-grid">
+          <div class="stat-card draft">
+            <div class="stat-label">DRAFT</div>
+            <div class="stat-value" id="stat-draft">—</div>
+          </div>
+          <div class="stat-card submitted">
+            <div class="stat-label">SUBMITTED</div>
+            <div class="stat-value" id="stat-submitted">—</div>
+          </div>
+          <div class="stat-card approved">
+            <div class="stat-label">APPROVED</div>
+            <div class="stat-value" id="stat-approved">—</div>
+          </div>
+          <div class="stat-card total">
+            <div class="stat-label">TOTAL</div>
+            <div class="stat-value" id="stat-total">—</div>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+          <!-- Recent Documents -->
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">// последние документы</span>
+              <button class="btn btn-ghost btn-sm" onclick="navigate('documents')">Все →</button>
+            </div>
+            <div id="recent-docs">
+              <div class="loading-overlay"><div class="spinner"></div> Загрузка...</div>
+            </div>
+          </div>
+
+          <!-- Quick Actions -->
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">// быстрые действия</span>
+            </div>
+            <div class="card-body" style="display:flex;flex-direction:column;gap:10px">
+              <button class="btn btn-primary" onclick="navigate('create')" style="justify-content:center">
+                ＋ Создать документ
+              </button>
+              <button class="btn btn-ghost" onclick="navigate('batch')" style="justify-content:center">
+                ⚡ Batch Submit/Approve
+              </button>
+              <button class="btn btn-ghost" onclick="navigate('concurrency')" style="justify-content:center">
+                ⊛ Тест конкурентности
+              </button>
+              <div style="margin-top:8px;padding-top:16px;border-top:1px solid var(--border)">
+                <div class="batch-section-title">Быстрый Approve по ID</div>
+                <div class="id-input-row">
+                  <input type="text" id="quick-id" placeholder="ID документа (напр. 42)">
+                  <button class="btn btn-success" onclick="quickApprove()">Approve</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- DOCUMENTS PAGE -->
+      <div class="page" id="page-documents">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+          <div class="action-bar">
+            <select id="filter-status" onchange="loadDocuments(1)" style="height:34px;font-size:13px">
+              <option value="">Все статусы</option>
+              <option value="DRAFT">DRAFT</option>
+              <option value="SUBMITTED">SUBMITTED</option>
+              <option value="APPROVED">APPROVED</option>
+            </select>
+            <input type="text" id="filter-author" placeholder="Автор..." style="height:34px;font-size:13px;width:160px" oninput="debounceLoad()">
+            <button class="btn btn-ghost btn-sm" onclick="loadDocuments(1)">Обновить</button>
+          </div>
+          <button class="btn btn-primary" onclick="navigate('create')">＋ Новый</button>
+        </div>
+
+        <div class="selection-bar" id="selection-bar">
+          <span class="selection-count" id="selection-count">0 выбрано</span>
+          <button class="btn btn-ghost btn-sm" onclick="batchSubmitSelected()">→ Submit</button>
+          <button class="btn btn-success btn-sm" onclick="batchApproveSelected()">✓ Approve</button>
+          <button class="btn btn-ghost btn-sm" onclick="clearSelection()">✕ Снять</button>
+        </div>
+
+        <div class="card">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th class="checkbox-col"><input type="checkbox" id="select-all" onchange="toggleSelectAll(this)"></th>
+                  <th>Номер</th>
+                  <th>Название</th>
+                  <th>Автор</th>
+                  <th>Статус</th>
+                  <th>Создан</th>
+                  <th>Действия</th>
+                </tr>
+              </thead>
+              <tbody id="docs-table-body">
+                <tr><td colspan="7"><div class="loading-overlay"><div class="spinner"></div> Загрузка...</div></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="pagination" id="docs-pagination"></div>
+        </div>
+      </div>
+
+      <!-- CREATE PAGE -->
+      <div class="page" id="page-create">
+        <div class="card" style="max-width:600px">
+          <div class="card-header">
+            <span class="card-title">// создать документ</span>
+          </div>
+          <div class="card-body">
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Название *</label>
+                <input type="text" id="new-title" placeholder="Введите название документа">
+              </div>
+              <div class="form-group">
+                <label>Автор *</label>
+                <input type="text" id="new-author" placeholder="Имя автора">
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-ghost" onclick="clearCreateForm()">Очистить</button>
+            <button class="btn btn-primary" onclick="createDocument()">Создать документ</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- SEARCH PAGE -->
+      <div class="page" id="page-search">
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-header">
+            <span class="card-title">// поиск документов</span>
+          </div>
+          <div class="card-body">
+            <div class="form-grid form-grid-3">
+              <div class="form-group">
+                <label>Статус</label>
+                <select id="search-status">
+                  <option value="">Любой</option>
+                  <option value="DRAFT">DRAFT</option>
+                  <option value="SUBMITTED">SUBMITTED</option>
+                  <option value="APPROVED">APPROVED</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Автор</label>
+                <input type="text" id="search-author" placeholder="Имя автора">
+              </div>
+              <div class="form-group">
+                <label>Дата с</label>
+                <input type="datetime-local" id="search-from">
+              </div>
+            </div>
+            <div class="form-grid form-grid-3" style="margin-top:12px">
+              <div class="form-group">
+                <label>Дата по</label>
+                <input type="datetime-local" id="search-to">
+              </div>
+              <div class="form-group">
+                <label>Сортировка</label>
+                <select id="search-sort">
+                  <option value="createdAt,desc">По дате (новые)</option>
+                  <option value="createdAt,asc">По дате (старые)</option>
+                  <option value="number,asc">По номеру</option>
+                  <option value="status,asc">По статусу</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-ghost" onclick="clearSearch()">Сбросить</button>
+            <button class="btn btn-primary" onclick="searchDocuments(1)">Найти</button>
+          </div>
+        </div>
+
+        <div class="card" id="search-results-card" style="display:none">
+          <div class="card-header">
+            <span class="card-title">// результаты</span>
+            <span class="tag" id="search-count-tag">0</span>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Номер</th>
+                  <th>Название</th>
+                  <th>Автор</th>
+                  <th>Статус</th>
+                  <th>Создан</th>
+                </tr>
+              </thead>
+              <tbody id="search-table-body"></tbody>
+            </table>
+          </div>
+          <div class="pagination" id="search-pagination"></div>
+        </div>
+      </div>
+
+      <!-- BATCH PAGE -->
+      <div class="page" id="page-batch">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+
+          <!-- Submit -->
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">// batch submit</span>
+              <span class="badge badge-draft">DRAFT → SUBMITTED</span>
+            </div>
+            <div class="card-body">
+              <div class="form-group" style="margin-bottom:12px">
+                <label>ID документов (через запятую)</label>
+                <textarea id="submit-ids" placeholder="1, 2, 3, 42, 100..." rows="3"></textarea>
+              </div>
+              <div class="form-group" style="margin-bottom:16px">
+                <label>Инициатор</label>
+                <input type="text" id="submit-initiator" value="admin" placeholder="Имя инициатора">
+              </div>
+              <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="batchSubmit()">
+                ⚡ Отправить на согласование
+              </button>
+              <div id="submit-results" class="result-list"></div>
+            </div>
+          </div>
+
+          <!-- Approve -->
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">// batch approve</span>
+              <span class="badge badge-approved">SUBMITTED → APPROVED</span>
+            </div>
+            <div class="card-body">
+              <div class="form-group" style="margin-bottom:12px">
+                <label>ID документов (через запятую)</label>
+                <textarea id="approve-ids" placeholder="1, 2, 3, 42, 100..." rows="3"></textarea>
+              </div>
+              <div class="form-group" style="margin-bottom:16px">
+                <label>Инициатор</label>
+                <input type="text" id="approve-initiator" value="admin" placeholder="Имя инициатора">
+              </div>
+              <button class="btn btn-success" style="width:100%;justify-content:center" onclick="batchApprove()">
+                ✓ Утвердить документы
+              </button>
+              <div id="approve-results" class="result-list"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CONCURRENCY PAGE -->
+      <div class="page" id="page-concurrency">
+        <div class="card" style="max-width:600px;margin-bottom:16px">
+          <div class="card-header">
+            <span class="card-title">// тест конкурентного утверждения</span>
+          </div>
+          <div class="card-body">
+            <div class="form-grid form-grid-3">
+              <div class="form-group">
+                <label>ID документа *</label>
+                <input type="number" id="conc-doc-id" placeholder="42" min="1">
+              </div>
+              <div class="form-group">
+                <label>Потоков (threads)</label>
+                <input type="number" id="conc-threads" value="5" min="1" max="20">
+              </div>
+              <div class="form-group">
+                <label>Попыток (attempts)</label>
+                <input type="number" id="conc-attempts" value="10" min="1" max="50">
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-primary" onclick="runConcurrencyTest()" id="conc-btn">
+              ⊛ Запустить тест
+            </button>
+          </div>
+        </div>
+
+        <div class="card" id="conc-results" style="display:none;max-width:600px">
+          <div class="card-header">
+            <span class="card-title">// результаты теста</span>
+          </div>
+          <div class="card-body">
+            <div class="concurrency-grid">
+              <div class="concurrency-result">
+                <div class="concurrency-result-value" id="conc-success" style="color:var(--green)">0</div>
+                <div class="concurrency-result-label">Успешно</div>
+                <div class="progress-bar-wrap"><div class="progress-bar green" id="conc-bar-success" style="width:0%"></div></div>
+              </div>
+              <div class="concurrency-result">
+                <div class="concurrency-result-value" id="conc-conflict" style="color:var(--yellow)">0</div>
+                <div class="concurrency-result-label">Конфликтов</div>
+                <div class="progress-bar-wrap"><div class="progress-bar" id="conc-bar-conflict" style="width:0%;background:var(--yellow)"></div></div>
+              </div>
+              <div class="concurrency-result">
+                <div class="concurrency-result-value" id="conc-errors" style="color:var(--red)">0</div>
+                <div class="concurrency-result-label">Ошибок</div>
+                <div class="progress-bar-wrap"><div class="progress-bar red" id="conc-bar-errors" style="width:0%"></div></div>
+              </div>
+            </div>
+            <div style="padding-top:16px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+              <div>
+                <div class="detail-label">Финальный статус документа</div>
+                <div style="margin-top:4px" id="conc-final-status"></div>
+              </div>
+              <div style="text-align:right">
+                <div class="detail-label">Тест прошёл</div>
+                <div style="margin-top:4px;font-family:var(--mono);font-size:13px" id="conc-verdict"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /content -->
+  </main>
+</div>
+
+<!-- DOCUMENT DETAIL MODAL -->
+<div class="modal-overlay" id="doc-modal">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <span class="modal-title" id="modal-doc-number">Документ</span>
+      <button class="modal-close" onclick="closeModal('doc-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="modal-doc-content"></div>
+    </div>
+    <div class="modal-footer" id="modal-doc-actions"></div>
+  </div>
+</div>
+
+<!-- TOAST CONTAINER -->
+<div class="toast-container" id="toasts"></div>
+
+<script>
+const API = 'http://localhost:8080/api/v1';
+
+// ─── STATE ───────────────────────────────────────────────
+let currentPage = 'dashboard';
+let selectedIds = new Set();
+let docsCurrentPage = 1;
+let docsTotalPages = 1;
+let searchCurrentPage = 1;
+let debounceTimer = null;
+
+// ─── NAVIGATION ──────────────────────────────────────────
+function navigate(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+
+  const titles = {
+    dashboard: '// dashboard',
+    documents: '// documents',
+    create: '// create document',
+    search: '// search',
+    batch: '// batch operations',
+    concurrency: '// concurrency test'
+  };
+  document.getElementById('topbar-title').textContent = titles[page] || '// ' + page;
+
+  const navMap = {
+    dashboard: 0, documents: 1, create: 2, search: 3, batch: 4, concurrency: 5
+  };
+  const items = document.querySelectorAll('.nav-item');
+  if (navMap[page] !== undefined) items[navMap[page]].classList.add('active');
+
+  currentPage = page;
+  if (page === 'dashboard') loadDashboard();
+  if (page === 'documents') loadDocuments(docsCurrentPage);
+}
+
+// ─── API CALL ─────────────────────────────────────────────
+async function api(path, options = {}) {
+  const resp = await fetch(API + path, {
+    headers: { 'Content-Type': 'application/json', ...options.headers },
+    ...options
+  });
+  if (!resp.ok) {
+    const err = await resp.json().catch(() => ({ message: resp.statusText }));
+    throw new Error(err.message || 'Ошибка API');
+  }
+  return resp.json();
+}
+
+// ─── STATUS CHECK ─────────────────────────────────────────
+async function checkStatus() {
+  try {
+    await fetch(API + '/documents/search?page=0&size=1');
+    document.getElementById('status-dot').className = 'status-dot online';
+    document.getElementById('status-text').textContent = 'API доступен';
+  } catch {
+    document.getElementById('status-dot').className = 'status-dot offline';
+    document.getElementById('status-text').textContent = 'API недоступен';
+  }
+}
+
+// ─── DASHBOARD ───────────────────────────────────────────
+async function loadDashboard() {
+  try {
+    const [draft, submitted, approved] = await Promise.all([
+      api('/documents/search?status=DRAFT&page=0&size=1'),
+      api('/documents/search?status=SUBMITTED&page=0&size=1'),
+      api('/documents/search?status=APPROVED&page=0&size=1'),
+    ]);
+
+    const d = draft.totalElements || 0;
+    const s = submitted.totalElements || 0;
+    const a = approved.totalElements || 0;
+
+    document.getElementById('stat-draft').textContent = d;
+    document.getElementById('stat-submitted').textContent = s;
+    document.getElementById('stat-approved').textContent = a;
+    document.getElementById('stat-total').textContent = d + s + a;
+
+    // Recent docs
+    const recent = await api('/documents/search?page=0&size=8&sort=createdAt,desc');
+    const el = document.getElementById('recent-docs');
+    if (!recent.content?.length) {
+      el.innerHTML = `<div class="empty-state"><div class="empty-icon">▤</div><div class="empty-text">Нет документов</div></div>`;
+      return;
+    }
+    el.innerHTML = `<table style="width:100%">
+      <tbody>
+        ${recent.content.map(d => `
+          <tr onclick="showDoc(${d.id})" style="cursor:pointer">
+            <td style="padding:10px 16px"><span class="doc-number">${d.number}</span></td>
+            <td style="padding:10px 16px"><span class="doc-title" style="font-size:13px">${d.title}</span></td>
+            <td style="padding:10px 16px"><span class="badge badge-${d.status.toLowerCase()}">${d.status}</span></td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>`;
+  } catch(e) {
+    console.error(e);
+  }
+}
+
+// ─── DOCUMENTS TABLE ─────────────────────────────────────
+async function loadDocuments(page = 1) {
+  docsCurrentPage = page;
+  const status = document.getElementById('filter-status').value;
+  const author = document.getElementById('filter-author').value;
+  const body = document.getElementById('docs-table-body');
+
+  body.innerHTML = `<tr><td colspan="7"><div class="loading-overlay"><div class="spinner"></div> Загрузка...</div></td></tr>`;
+
+  try {
+    let params = `page=${page-1}&size=20&sort=createdAt,desc`;
+    if (status) params += `&status=${status}`;
+    if (author) params += `&author=${encodeURIComponent(author)}`;
+
+    const data = await api(`/documents/search?${params}`);
+    docsTotalPages = data.totalPages || 1;
+
+    if (!data.content?.length) {
+      body.innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="empty-icon">▤</div><div class="empty-text">Нет документов</div></div></td></tr>`;
+      document.getElementById('docs-pagination').innerHTML = '';
+      return;
+    }
+
+    body.innerHTML = data.content.map(d => `
+      <tr>
+        <td class="checkbox-col"><input type="checkbox" value="${d.id}" onchange="toggleSelect(${d.id}, this.checked)" ${selectedIds.has(d.id)?'checked':''}></td>
+        <td onclick="showDoc(${d.id})"><span class="doc-number">${d.number}</span></td>
+        <td onclick="showDoc(${d.id})"><span class="doc-title">${escHtml(d.title)}</span></td>
+        <td onclick="showDoc(${d.id})" style="color:var(--text2)">${escHtml(d.author)}</td>
+        <td onclick="showDoc(${d.id})"><span class="badge badge-${d.status.toLowerCase()}">${d.status}</span></td>
+        <td onclick="showDoc(${d.id})" style="color:var(--text3);font-family:var(--mono);font-size:12px">${fmtDate(d.createdAt)}</td>
+        <td>
+          <div style="display:flex;gap:6px">
+            ${d.status==='DRAFT' ? `<button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();singleSubmit(${d.id})">Submit</button>` : ''}
+            ${d.status==='SUBMITTED' ? `<button class="btn btn-success btn-sm" onclick="event.stopPropagation();singleApprove(${d.id})">Approve</button>` : ''}
+          </div>
+        </td>
+      </tr>
+    `).join('');
+
+    renderPagination('docs-pagination', page, docsTotalPages, p => loadDocuments(p));
+  } catch(e) {
+    body.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--red)">${e.message}</td></tr>`;
+  }
+}
+
+function debounceLoad() {
+  clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(() => loadDocuments(1), 400);
+}
+
+// ─── DOCUMENT DETAIL MODAL ───────────────────────────────
+async function showDoc(id) {
+  const modal = document.getElementById('doc-modal');
+  modal.classList.add('open');
+  document.getElementById('modal-doc-content').innerHTML = `<div class="loading-overlay"><div class="spinner"></div> Загрузка...</div>`;
+  document.getElementById('modal-doc-actions').innerHTML = '';
+  document.getElementById('modal-doc-number').textContent = 'Документ #' + id;
+
+  try {
+    const doc = await api(`/documents/${id}`);
+    document.getElementById('modal-doc-number').textContent = doc.number;
+
+    const historyHtml = doc.history?.length
+      ? `<div class="timeline">${doc.history.map(h => `
+          <div class="timeline-item">
+            <div class="timeline-dot timeline-dot-${h.action.toLowerCase()}">${h.action==='SUBMIT'?'→':'✓'}</div>
+            <div class="timeline-content">
+              <div class="timeline-action">${h.action}</div>
+              <div class="timeline-meta">${escHtml(h.initiator)} · ${fmtDate(h.performedAt)}</div>
+              ${h.comment ? `<div class="timeline-comment">${escHtml(h.comment)}</div>` : ''}
+            </div>
+          </div>
+        `).join('')}</div>`
+      : `<div style="color:var(--text3);font-size:13px;padding:8px 0">История пуста</div>`;
+
+    document.getElementById('modal-doc-content').innerHTML = `
+      <div class="detail-grid" style="margin-bottom:20px">
+        <div class="detail-field">
+          <div class="detail-label">Номер</div>
+          <div class="detail-value" style="font-family:var(--mono);color:var(--accent)">${doc.number}</div>
+        </div>
+        <div class="detail-field">
+          <div class="detail-label">Статус</div>
+          <div class="detail-value"><span class="badge badge-${doc.status.toLowerCase()}">${doc.status}</span></div>
+        </div>
+        <div class="detail-field">
+          <div class="detail-label">Название</div>
+          <div class="detail-value">${escHtml(doc.title)}</div>
+        </div>
+        <div class="detail-field">
+          <div class="detail-label">Автор</div>
+          <div class="detail-value">${escHtml(doc.author)}</div>
+        </div>
+        <div class="detail-field">
+          <div class="detail-label">Создан</div>
+          <div class="detail-value" style="font-family:var(--mono);font-size:13px;color:var(--text2)">${fmtDate(doc.createdAt)}</div>
+        </div>
+        <div class="detail-field">
+          <div class="detail-label">Обновлён</div>
+          <div class="detail-value" style="font-family:var(--mono);font-size:13px;color:var(--text2)">${fmtDate(doc.updatedAt)}</div>
+        </div>
+      </div>
+      <div style="font-family:var(--mono);font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">История изменений</div>
+      ${historyHtml}
+    `;
+
+    const actions = document.getElementById('modal-doc-actions');
+    actions.innerHTML = '';
+    if (doc.status === 'DRAFT') {
+      const btn = document.createElement('button');
+      btn.className = 'btn btn-primary';
+      btn.textContent = '→ Submit';
+      btn.onclick = async () => { await singleSubmit(id); closeModal('doc-modal'); loadDocuments(docsCurrentPage); };
+      actions.appendChild(btn);
+    }
+    if (doc.status === 'SUBMITTED') {
+      const btn = document.createElement('button');
+      btn.className = 'btn btn-success';
+      btn.textContent = '✓ Approve';
+      btn.onclick = async () => { await singleApprove(id); closeModal('doc-modal'); loadDocuments(docsCurrentPage); };
+      actions.appendChild(btn);
+    }
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'btn btn-ghost';
+    closeBtn.textContent = 'Закрыть';
+    closeBtn.onclick = () => closeModal('doc-modal');
+    actions.appendChild(closeBtn);
+
+  } catch(e) {
+    document.getElementById('modal-doc-content').innerHTML = `<div style="color:var(--red);padding:20px">${e.message}</div>`;
+  }
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+}
+
+// ─── CREATE DOCUMENT ─────────────────────────────────────
+async function createDocument() {
+  const title = document.getElementById('new-title').value.trim();
+  const author = document.getElementById('new-author').value.trim();
+
+  if (!title || !author) {
+    toast('Заполните все поля', 'error');
+    return;
+  }
+
+  try {
+    const doc = await api('/documents', {
+      method: 'POST',
+      body: JSON.stringify({ title, author })
+    });
+    toast(`Документ ${doc.number} создан`, 'success');
+    clearCreateForm();
+    navigate('documents');
+  } catch(e) {
+    toast(e.message, 'error');
+  }
+}
+
+function clearCreateForm() {
+  document.getElementById('new-title').value = '';
+  document.getElementById('new-author').value = '';
+}
+
+// ─── SEARCH ──────────────────────────────────────────────
+async function searchDocuments(page = 1) {
+  searchCurrentPage = page;
+  const status = document.getElementById('search-status').value;
+  const author = document.getElementById('search-author').value;
+  const from = document.getElementById('search-from').value;
+  const to = document.getElementById('search-to').value;
+  const sort = document.getElementById('search-sort').value;
+
+  let params = `page=${page-1}&size=20&sort=${sort}`;
+  if (status) params += `&status=${status}`;
+  if (author) params += `&author=${encodeURIComponent(author)}`;
+  if (from) params += `&dateFrom=${encodeURIComponent(from + ':00')}`;
+  if (to) params += `&dateTo=${encodeURIComponent(to + ':00')}`;
+
+  const card = document.getElementById('search-results-card');
+  const body = document.getElementById('search-table-body');
+  card.style.display = 'block';
+  body.innerHTML = `<tr><td colspan="5"><div class="loading-overlay"><div class="spinner"></div></div></td></tr>`;
+
+  try {
+    const data = await api(`/documents/search?${params}`);
+    document.getElementById('search-count-tag').textContent = data.totalElements + ' найдено';
+
+    if (!data.content?.length) {
+      body.innerHTML = `<tr><td colspan="5"><div class="empty-state"><div class="empty-icon">⌕</div><div class="empty-text">Ничего не найдено</div></div></td></tr>`;
+      document.getElementById('search-pagination').innerHTML = '';
+      return;
+    }
+
+    body.innerHTML = data.content.map(d => `
+      <tr onclick="showDoc(${d.id})">
+        <td><span class="doc-number">${d.number}</span></td>
+        <td><span class="doc-title">${escHtml(d.title)}</span></td>
+        <td style="color:var(--text2)">${escHtml(d.author)}</td>
+        <td><span class="badge badge-${d.status.toLowerCase()}">${d.status}</span></td>
+        <td style="color:var(--text3);font-family:var(--mono);font-size:12px">${fmtDate(d.createdAt)}</td>
+      </tr>
+    `).join('');
+
+    renderPagination('search-pagination', page, data.totalPages || 1, p => searchDocuments(p));
+  } catch(e) {
+    body.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:40px;color:var(--red)">${e.message}</td></tr>`;
+  }
+}
+
+function clearSearch() {
+  ['search-status','search-author','search-from','search-to'].forEach(id => {
+    const el = document.getElementById(id);
+    el.value = '';
+  });
+  document.getElementById('search-sort').value = 'createdAt,desc';
+  document.getElementById('search-results-card').style.display = 'none';
+}
+
+// ─── SINGLE ACTIONS ──────────────────────────────────────
+async function singleSubmit(id) {
+  try {
+    const res = await api('/documents/submit', {
+      method: 'POST',
+      body: JSON.stringify({ ids: [id], initiator: 'admin' })
+    });
+    const r = res[0] || res;
+    if (r.status === 'SUCCESS' || r.result === 'SUCCESS') {
+      toast(`Документ #${id} отправлен на согласование`, 'success');
+      if (currentPage === 'documents') loadDocuments(docsCurrentPage);
+    } else {
+      toast(`Ошибка: ${r.message || r.result || 'конфликт'}`, 'error');
+    }
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+async function singleApprove(id) {
+  try {
+    const res = await api('/documents/approve', {
+      method: 'POST',
+      body: JSON.stringify({ ids: [id], initiator: 'admin' })
+    });
+    const r = Array.isArray(res) ? res[0] : res;
+    if (r?.status === 'SUCCESS' || r?.result === 'SUCCESS') {
+      toast(`Документ #${id} утверждён`, 'success');
+      if (currentPage === 'documents') loadDocuments(docsCurrentPage);
+    } else {
+      toast(`Ошибка: ${r?.message || r?.result || 'конфликт'}`, 'error');
+    }
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+async function quickApprove() {
+  const id = parseInt(document.getElementById('quick-id').value);
+  if (!id) { toast('Введите ID документа', 'error'); return; }
+  await singleApprove(id);
+}
+
+// ─── BATCH OPERATIONS ────────────────────────────────────
+function parseIds(raw) {
+  return raw.split(/[,\s\n]+/).map(s => parseInt(s.trim())).filter(n => !isNaN(n) && n > 0);
+}
+
+async function batchSubmit() {
+  const ids = parseIds(document.getElementById('submit-ids').value);
+  const initiator = document.getElementById('submit-initiator').value || 'admin';
+  if (!ids.length) { toast('Введите хотя бы один ID', 'error'); return; }
+
+  const resultsEl = document.getElementById('submit-results');
+  resultsEl.innerHTML = `<div class="loading-overlay" style="padding:20px"><div class="spinner"></div> Обработка...</div>`;
+
+  try {
+    const res = await api('/documents/submit', {
+      method: 'POST',
+      body: JSON.stringify({ ids, initiator })
+    });
+
+    const items = Array.isArray(res) ? res : Object.entries(res).map(([id, v]) => ({ id, ...v }));
+    resultsEl.innerHTML = items.map(r => {
+      const status = r.status || r.result || '';
+      const cls = status === 'SUCCESS' ? 'success' : status === 'CONFLICT' ? 'conflict' : 'error';
+      return `<div class="result-item ${cls}">
+        <span class="result-item-id">ID: ${r.id || r.documentId}</span>
+        <span class="result-item-status">${status}${r.message ? ' · ' + r.message : ''}</span>
+      </div>`;
+    }).join('');
+
+    const ok = items.filter(r => (r.status||r.result)==='SUCCESS').length;
+    toast(`Submit: ${ok}/${items.length} успешно`, ok > 0 ? 'success' : 'error');
+  } catch(e) {
+    resultsEl.innerHTML = '';
+    toast(e.message, 'error');
+  }
+}
+
+async function batchApprove() {
+  const ids = parseIds(document.getElementById('approve-ids').value);
+  const initiator = document.getElementById('approve-initiator').value || 'admin';
+  if (!ids.length) { toast('Введите хотя бы один ID', 'error'); return; }
+
+  const resultsEl = document.getElementById('approve-results');
+  resultsEl.innerHTML = `<div class="loading-overlay" style="padding:20px"><div class="spinner"></div> Обработка...</div>`;
+
+  try {
+    const res = await api('/documents/approve', {
+      method: 'POST',
+      body: JSON.stringify({ ids, initiator })
+    });
+
+    const items = Array.isArray(res) ? res : Object.entries(res).map(([id, v]) => ({ id, ...v }));
+    resultsEl.innerHTML = items.map(r => {
+      const status = r.status || r.result || '';
+      const cls = status === 'SUCCESS' ? 'success' : status === 'CONFLICT' ? 'conflict' : 'error';
+      return `<div class="result-item ${cls}">
+        <span class="result-item-id">ID: ${r.id || r.documentId}</span>
+        <span class="result-item-status">${status}${r.message ? ' · ' + r.message : ''}</span>
+      </div>`;
+    }).join('');
+
+    const ok = items.filter(r => (r.status||r.result)==='SUCCESS').length;
+    toast(`Approve: ${ok}/${items.length} успешно`, ok > 0 ? 'success' : 'error');
+  } catch(e) {
+    resultsEl.innerHTML = '';
+    toast(e.message, 'error');
+  }
+}
+
+// ─── SELECTION ───────────────────────────────────────────
+function toggleSelect(id, checked) {
+  if (checked) selectedIds.add(id); else selectedIds.delete(id);
+  updateSelectionBar();
+}
+
+function toggleSelectAll(cb) {
+  document.querySelectorAll('#docs-table-body input[type="checkbox"]').forEach(c => {
+    c.checked = cb.checked;
+    const id = parseInt(c.value);
+    if (cb.checked) selectedIds.add(id); else selectedIds.delete(id);
+  });
+  updateSelectionBar();
+}
+
+function updateSelectionBar() {
+  const bar = document.getElementById('selection-bar');
+  const count = document.getElementById('selection-count');
+  if (selectedIds.size > 0) {
+    bar.classList.add('visible');
+    count.textContent = `${selectedIds.size} выбрано`;
+  } else {
+    bar.classList.remove('visible');
+  }
+}
+
+function clearSelection() {
+  selectedIds.clear();
+  document.querySelectorAll('#docs-table-body input[type="checkbox"]').forEach(c => c.checked = false);
+  document.getElementById('select-all').checked = false;
+  updateSelectionBar();
+}
+
+async function batchSubmitSelected() {
+  const ids = [...selectedIds];
+  document.getElementById('submit-ids').value = ids.join(', ');
+  navigate('batch');
+}
+
+async function batchApproveSelected() {
+  const ids = [...selectedIds];
+  document.getElementById('approve-ids').value = ids.join(', ');
+  navigate('batch');
+}
+
+// ─── CONCURRENCY TEST ────────────────────────────────────
+async function runConcurrencyTest() {
+  const docId = parseInt(document.getElementById('conc-doc-id').value);
+  const threads = parseInt(document.getElementById('conc-threads').value) || 5;
+  const attempts = parseInt(document.getElementById('conc-attempts').value) || 10;
+
+  if (!docId) { toast('Введите ID документа', 'error'); return; }
+
+  const btn = document.getElementById('conc-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner"></div> Тест...';
+
+  try {
+    const res = await api(`/documents/${docId}/concurrency-test`, {
+      method: 'POST',
+      body: JSON.stringify({ threads, attempts })
+    });
+
+    const total = (res.successCount || 0) + (res.conflictCount || 0) + (res.errorCount || 0);
+
+    document.getElementById('conc-success').textContent = res.successCount || 0;
+    document.getElementById('conc-conflict').textContent = res.conflictCount || 0;
+    document.getElementById('conc-errors').textContent = res.errorCount || 0;
+
+    const pct = v => total > 0 ? Math.round(v / total * 100) + '%' : '0%';
+    document.getElementById('conc-bar-success').style.width = pct(res.successCount || 0);
+    document.getElementById('conc-bar-conflict').style.width = pct(res.conflictCount || 0);
+    document.getElementById('conc-bar-errors').style.width = pct(res.errorCount || 0);
+
+    const statusEl = document.getElementById('conc-final-status');
+    const st = res.finalStatus || 'UNKNOWN';
+    statusEl.innerHTML = `<span class="badge badge-${st.toLowerCase()}">${st}</span>`;
+
+    const ok = res.successCount === 1 && st === 'APPROVED';
+    document.getElementById('conc-verdict').innerHTML = ok
+      ? `<span style="color:var(--green)">✓ Прошёл</span>`
+      : `<span style="color:var(--red)">✗ Не прошёл</span>`;
+
+    document.getElementById('conc-results').style.display = 'block';
+    toast('Тест завершён', ok ? 'success' : 'info');
+  } catch(e) {
+    toast(e.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '⊛ Запустить тест';
+  }
+}
+
+// ─── QUICK SEARCH ─────────────────────────────────────────
+async function quickSearch(val) {
+  if (!val.trim()) return;
+  navigate('search');
+  document.getElementById('search-author').value = '';
+  document.getElementById('search-status').value = '';
+  await searchDocuments(1);
+}
+
+// ─── PAGINATION ──────────────────────────────────────────
+function renderPagination(containerId, current, total, onPage) {
+  const el = document.getElementById(containerId);
+  if (total <= 1) { el.innerHTML = ''; return; }
+
+  let html = `<span class="page-info">Стр. ${current} / ${total}</span>`;
+  html += `<button onclick="(${onPage.toString()})(${current-1})" ${current===1?'disabled':''}>‹</button>`;
+
+  const pages = [];
+  for (let i = 1; i <= total; i++) {
+    if (i === 1 || i === total || Math.abs(i - current) <= 2) pages.push(i);
+    else if (pages[pages.length-1] !== '…') pages.push('…');
+  }
+
+  pages.forEach(p => {
+    if (p === '…') html += `<span style="color:var(--text3);padding:0 4px">…</span>`;
+    else html += `<button class="${p===current?'active':''}" onclick="(${onPage.toString()})(${p})">${p}</button>`;
+  });
+
+  html += `<button onclick="(${onPage.toString()})(${current+1})" ${current===total?'disabled':''}>›</button>`;
+  el.innerHTML = html;
+}
+
+// ─── TOAST ───────────────────────────────────────────────
+function toast(msg, type = 'info') {
+  const icons = { success: '✓', error: '✕', info: 'ℹ' };
+  const colors = { success: 'var(--green)', error: 'var(--red)', info: 'var(--accent)' };
+  const el = document.createElement('div');
+  el.className = `toast toast-${type}`;
+  el.innerHTML = `<span style="color:${colors[type]};font-size:15px">${icons[type]}</span>${escHtml(msg)}`;
+  document.getElementById('toasts').appendChild(el);
+  requestAnimationFrame(() => el.classList.add('show'));
+  setTimeout(() => {
+    el.classList.remove('show');
+    setTimeout(() => el.remove(), 300);
+  }, 3500);
+}
+
+// ─── UTILS ───────────────────────────────────────────────
+function fmtDate(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  return d.toLocaleDateString('ru-RU') + ' ' + d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+}
+
+function escHtml(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ─── CLOSE MODAL ON BACKDROP ─────────────────────────────
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', e => {
+    if (e.target === overlay) overlay.classList.remove('open');
+  });
+});
+
+// ─── INIT ────────────────────────────────────────────────
+checkStatus();
+setInterval(checkStatus, 30000);
+loadDashboard();
+</script>
+</body>
+</html>
